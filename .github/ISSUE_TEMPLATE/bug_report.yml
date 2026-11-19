@@ -1,0 +1,31 @@
+name: Bug report
+description: Something in Leasekeep isn't working as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Please don't include real homeowners' names, addresses or financial details.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Ideally using the demo data (`python manage.py seed_demo --with-users`).
+  - type: input
+    id: version
+    attributes:
+      label: Leasekeep version and build
+      description: Shown in the page footer and at /healthz, e.g. "v1.0.0 · build 12 · 3f2c1ab".
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run Leasekeep?
+      options: [Docker image, docker compose, From source, Other]

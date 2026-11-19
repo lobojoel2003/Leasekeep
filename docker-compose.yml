@@ -1,0 +1,42 @@
+# Self-host Leasekeep with PostgreSQL:
+#   cp .env.example .env   # then edit it
+#   docker compose up -d
+#   docker compose exec web leasekeep-entrypoint manage.py createsuperuser
+name: leasekeep
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: leasekeep
+      POSTGRES_USER: leasekeep
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-leasekeep}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leasekeep -d leasekeep"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    image: ghcr.io/lobojoel2003/leasekeep:${LEASEKEEP_TAG:-latest}
+    build: .
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgres://leasekeep:${POSTGRES_PASSWORD:-leasekeep}@db:5432/leasekeep
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${LEASEKEEP_PORT:-8000}:8000"
+    volumes:
+      - media:/data
+
+volumes:
+  pgdata:
+  media:

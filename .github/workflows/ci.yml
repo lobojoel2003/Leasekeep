@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: "1"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Ruff lint
+        run: ruff check --output-format=github .
+      - name: Ruff format
+        run: ruff format --check .
+
+  test:
+    name: Test (Python ${{ matrix.python }}, PostgreSQL 16)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13"]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: leasekeep
+          POSTGRES_USER: leasekeep
+          POSTGRES_PASSWORD: leasekeep
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U leasekeep"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://leasekeep:leasekeep@localhost:5432/leasekeep
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Migrations are up to date
+        run: python manage.py makemigrations --check --dry-run
+        env:
+          LEASEKEEP_ENV: test
+      - name: Production configuration passes Django's deploy checks
+        run: python manage.py check --deploy --fail-level WARNING
+        env:
+          LEASEKEEP_ENV: production
+          DJANGO_SECRET_KEY: ci-only-${{ github.run_id }}-not-a-real-secret-key-0123456789
+          DJANGO_ALLOWED_HOSTS: leasekeep.example.org
+      - name: Tests
+        run: pytest --cov --cov-report=term --cov-report=xml --junitxml=junit.xml
+      - name: Coverage summary
+        if: always() && matrix.python == '3.13'
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import xml.etree.ElementTree as ET
+          rate = float(ET.parse("coverage.xml").getroot().get("line-rate")) * 100
+          print(f"### Test coverage: {rate:.1f}%")
+          PY
+      - uses: actions/upload-artifact@v7
+        if: always() && matrix.python == '3.13'
+        with:
+          name: test-results
+          path: |
+            coverage.xml
+            junit.xml
+
+  build:
+    name: Build package and image
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - name: Version and build number
+        id: meta
+        run: |
+          version=$(python scripts/release_tools.py version)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "build=${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          echo "### Leasekeep v$version · build ${{ github.run_number }} · ${GITHUB_SHA::7}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Build wheel and sdist
+        run: |
+          pip install build
+          python scripts/write_build_info.py --build-number "${{ steps.meta.outputs.build }}" --git-sha "$GITHUB_SHA"
+          python -m build
+          ls -l dist
+      - uses: actions/upload-artifact@v7
+        with:
+          name: leasekeep-${{ steps.meta.outputs.version }}-build-${{ steps.meta.outputs.build }}
+          path: dist/
+      - uses: docker/setup-buildx-action@v4
+      - name: Build Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          tags: leasekeep:ci
+          build-args: |
+            VERSION=${{ steps.meta.outputs.version }}
+            BUILD_NUMBER=${{ steps.meta.outputs.build }}
+            GIT_SHA=${{ github.sha }}
+            BUILD_DATE=${{ steps.meta.outputs.date }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke test the container
+        run: |
+          docker run -d --name leasekeep -p 8000:8000 \
+            -e DJANGO_SECRET_KEY=ci-smoke-test-secret-key-0123456789abcdefghij \
+            -e DJANGO_ALLOWED_HOSTS=localhost \
+            -e DJANGO_SECURE_SSL_REDIRECT=false \
+            -e DATABASE_URL=sqlite:////data/db.sqlite3 \
+            leasekeep:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/healthz; then echo; break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:8000/healthz | grep -q '"build_number": "${{ steps.meta.outputs.build }}"'
+          curl -fsS -o /dev/null http://localhost:8000/accounts/login/
+          docker exec leasekeep leasekeep-entrypoint manage.py seed_demo --with-users
+          docker logs leasekeep | tail -20

@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest something that would help your land trust
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What do you need to do?
+      description: Describe the stewardship task, report or policy, and who does it today.
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: Example
+      description: For formulas and reports, a worked example or the funder's required format helps a lot.
+  - type: input
+    id: org
+    attributes:
+      label: Type of organization (optional)
+      description: e.g. CLT with 40 homes, city program, regional land trust
