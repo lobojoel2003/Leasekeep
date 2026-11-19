@@ -25,7 +25,9 @@ def changelog_section(ver: str) -> str:
     match = re.search(rf"^## \[{re.escape(ver)}\][^\n]*\n(.*?)(?=^## \[|\Z)", text, re.MULTILINE | re.DOTALL)
     if not match:
         sys.exit(f"CHANGELOG.md has no section for [{ver}]")
-    return match.group(1).strip()
+    # Link-reference definitions ("[1.0.0]: https://…") belong to the file, not the notes.
+    lines = [ln for ln in match.group(1).splitlines() if not re.match(r"^\[[^\]]+\]: https?://", ln)]
+    return "\n".join(lines).strip()
 
 
 def check_tag(tag: str) -> None:

@@ -45,8 +45,26 @@ jobs:
     outputs:
       version: ${{ steps.meta.outputs.version }}
       prerelease: ${{ steps.meta.outputs.prerelease }}
+      sha: ${{ steps.commit.outputs.sha }}
+      short_sha: ${{ steps.commit.outputs.short_sha }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Resolve the commit to release
+        id: commit
+        # An existing tag always releases the commit it points to, so re-running a
+        # release rebuilds exactly that code. A new tag is created on the selected commit.
+        run: |
+          if git rev-parse -q --verify "refs/tags/$TAG^{commit}" >/dev/null; then
+            sha=$(git rev-parse "refs/tags/$TAG^{commit}")
+          else
+            sha="$GITHUB_SHA"
+          fi
+          git checkout -q "$sha"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${sha::7}" >> "$GITHUB_OUTPUT"
+          echo "Releasing $TAG from commit $sha" >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
@@ -73,16 +91,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.verify.outputs.sha }}
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Build
         run: |
           pip install build
-          python scripts/write_build_info.py --build-number "${{ github.run_number }}" --git-sha "$GITHUB_SHA"
+          python scripts/write_build_info.py --build-number "${{ github.run_number }}" --git-sha "${{ needs.verify.outputs.sha }}"
           python -m build
-          cp docker-compose.yml .env.example dist/
-          cd dist && sha256sum * > SHA256SUMS
+          # Dotfiles are skipped by shell globs, so ship the example settings without the dot.
+          cp docker-compose.yml dist/
+          cp .env.example dist/env.example
+          cd dist && sha256sum -- * > SHA256SUMS
           cat SHA256SUMS
       - uses: actions/upload-artifact@v7
         with:
@@ -100,6 +122,8 @@ jobs:
       digest: ${{ steps.push.outputs.digest }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.verify.outputs.sha }}
       - name: Build date
         id: date
         run: echo "value=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
@@ -121,7 +145,7 @@ jobs:
             type=semver,pattern={{major}},value=${{ env.TAG }},enable=${{ needs.verify.outputs.prerelease == 'false' }}
             type=raw,value=latest,enable=${{ needs.verify.outputs.prerelease == 'false' }}
             type=raw,value=build-${{ github.run_number }}
-            type=sha,format=short
+            type=raw,value=sha-${{ needs.verify.outputs.short_sha }}
       - id: push
         uses: docker/build-push-action@v7
         with:
@@ -133,7 +157,7 @@ jobs:
           build-args: |
             VERSION=${{ needs.verify.outputs.version }}
             BUILD_NUMBER=${{ github.run_number }}
-            GIT_SHA=${{ github.sha }}
+            GIT_SHA=${{ needs.verify.outputs.sha }}
             BUILD_DATE=${{ steps.date.outputs.value }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -146,6 +170,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.verify.outputs.sha }}
       - uses: actions/download-artifact@v8
         with:
           name: release-assets
@@ -153,11 +179,12 @@ jobs:
       - name: Release notes
         run: |
           {
-            python scripts/release_tools.py notes "$TAG"
+            # Drop the changelog's link-reference definitions from the notes.
+            python scripts/release_tools.py notes "$TAG" | grep -vE '^\[[^]]+\]: https?://'
             echo
             echo "---"
             echo
-            echo "**Build** ${{ github.run_number }} · commit \`${GITHUB_SHA::7}\`"
+            echo "**Build** ${{ github.run_number }} · commit \`${{ needs.verify.outputs.short_sha }}\`"
             echo
             echo "**Container image**"
             echo '```bash'
@@ -165,7 +192,7 @@ jobs:
             echo '```'
             echo "Digest: \`${{ needs.image.outputs.digest }}\`"
             echo
-            echo "**Install**: download \`docker-compose.yml\` and \`.env.example\` below, then follow the README's self-hosting guide."
+            echo "**Self-host**: download \`docker-compose.yml\` and \`env.example\` below, save \`env.example\` as \`.env\` and fill it in, then follow the README's self-hosting guide. \`SHA256SUMS\` lists checksums for every file."
           } > notes.md
           cat notes.md
       - name: Create or update the release
@@ -179,7 +206,7 @@ jobs:
             gh release upload "$TAG" dist/* --clobber
           else
             gh release create "$TAG" dist/* --title "Leasekeep $TAG" --notes-file notes.md \
-              --target "$GITHUB_SHA" "${flags[@]}"
+              --target "${{ needs.verify.outputs.sha }}" "${flags[@]}"
           fi
 
   deploy:

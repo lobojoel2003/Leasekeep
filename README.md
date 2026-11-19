@@ -177,7 +177,7 @@ Sign in, open **Settings** to name your organization and set policy (lease fee d
 
 ## Self-hosting with Docker
 
-Each release publishes a multi-architecture image (`linux/amd64`, `linux/arm64`) to the GitHub Container Registry: `ghcr.io/lobojoel2003/leasekeep`. Download `docker-compose.yml` and `.env.example` from the [latest release](https://github.com/lobojoel2003/Leasekeep/releases/latest) or this repository.
+Each release publishes a multi-architecture image (`linux/amd64`, `linux/arm64`) to the GitHub Container Registry: `ghcr.io/lobojoel2003/leasekeep`. You need two files: `docker-compose.yml` and a `.env` settings file. Download `docker-compose.yml` and `env.example` from the [latest release](https://github.com/lobojoel2003/Leasekeep/releases/latest) and save `env.example` as `.env`. Or, from a clone of this repository:
 
 ```bash
 cp .env.example .env

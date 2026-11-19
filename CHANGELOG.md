@@ -6,6 +6,12 @@ uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Releases attach the example settings file as `env.example` (shell globs skipped the
+  dotfile), and release notes no longer include the changelog's link definitions.
+- Re-running the release workflow for an existing tag now rebuilds that tag's commit.
+
 ## [1.0.0] - 2026-11-19
 
 The first release of Leasekeep: stewardship software for community land trusts.
