@@ -1,0 +1,29 @@
+{% extends "portal_base.html" %}
+{% load leasekeep %}
+{% block title %}Lease fees{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Lease fees</h1><p>Lease {{ lease.lease_number }} · {{ lease.monthly_fee|money }} a month</p></div>
+  <a class="btn btn--primary" href="{% url 'portal:pay' %}">{% icon "fees" "sm" %} Pay now</a>
+</div>
+<div class="tiles">
+  <div class="tile"><div class="tile__label">Balance</div><div class="tile__value">{% if ledger.balance > 0 %}{{ ledger.balance|money }}{% else %}$0.00{% endif %}</div><div class="tile__meta">{% if ledger.credit %}{{ ledger.credit|money }} credit{% elif ledger.balance <= 0 %}Paid up{% endif %}{% if ledger.pending %} · {{ ledger.pending|money }} processing{% endif %}</div></div>
+  <div class="tile"><div class="tile__label">Paid since {{ lease.start_date|date:"Y" }}</div><div class="tile__value">{{ ledger.total_paid|money:0 }}</div></div>
+</div>
+<div class="split">
+  <section class="card card--flush">
+    <div class="card__head"><div><h2>Monthly charges</h2><p>Last three years</p></div></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Month</th><th class="r">Amount</th><th>Status</th></tr></thead>
+      <tbody>{% for line in lines %}<tr><td>{{ line.charge.label }}<span class="sub">Due {{ line.charge.due_date|longdate }}</span></td><td class="r">{{ line.charge.amount|money }}</td><td>{% if line.status == "paid" %}{% status_pill "Paid" "good" %}{% elif line.status == "late" %}{% status_pill "Past due" "bad" %}{% elif line.status == "partial" %}{% status_pill "Partly paid" "warn" %}{% elif line.status == "waived" %}{% status_pill "Waived" "neutral" %}{% else %}{% status_pill "Due" "info" %}{% endif %}</td></tr>{% empty %}<tr><td colspan="3"><div class="empty">No charges yet.</div></td></tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+  <section class="card card--flush">
+    <div class="card__head"><div><h2>Payments</h2></div></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Date</th><th>Method</th><th class="r">Amount</th></tr></thead>
+      <tbody>{% for p in ledger.payments|slice:":36" %}<tr><td>{{ p.received_on|longdate }}</td><td>{{ p.get_method_display }}{% if p.status != "succeeded" %}<span class="sub">{{ p.get_status_display }}</span>{% endif %}</td><td class="r">{{ p.amount|money }}</td></tr>{% empty %}<tr><td colspan="3"><div class="empty">No payments yet.</div></td></tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+</div>
+{% endblock %}

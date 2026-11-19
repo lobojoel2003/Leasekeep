@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load static leasekeep %}
+{% block body %}
+<div class="mobile-bar">
+  <button type="button" data-nav-toggle aria-expanded="false" aria-controls="sidebar">{% icon "menu" "lg" %}<span class="sr-only">Menu</span></button>
+  <strong>Leasekeep</strong><span class="muted" style="color:#b8d3c4">{{ organization.display_name }}</span>
+</div>
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <a class="brand" href="{% url 'core:dashboard' %}">
+      <img src="{% static 'leasekeep/img/logo.svg' %}" alt="">
+      <span><span class="brand__name">Leasekeep</span><span class="brand__org">{{ organization.display_name }}</span></span>
+    </a>
+    {% with section=request.resolver_match.namespace url_name=request.resolver_match.url_name %}
+    <nav class="nav" aria-label="Main">
+      <a href="{% url 'core:dashboard' %}" {% if section == "core" %}aria-current="page"{% endif %}>{% icon "dashboard" %} Dashboard</a>
+      <div class="nav__label">Portfolio</div>
+      <a href="{% url 'homes:list' %}" {% if section == "homes" and url_name in "list detail create edit ownership_create appraisal_create subsidy_create formula resale" %}aria-current="page"{% endif %}>{% icon "home" %} Homes</a>
+      <a href="{% url 'homes:households' %}" {% if section == "homes" and "household" in url_name %}aria-current="page"{% endif %}>{% icon "users" %} Households</a>
+      <div class="nav__label">Stewardship</div>
+      <a href="{% url 'billing:overview' %}" {% if section == "billing" %}aria-current="page"{% endif %}>{% icon "fees" %} Lease fees</a>
+      <a href="{% url 'homes:occupancy' %}" {% if section == "homes" and "occupancy" in url_name %}aria-current="page"{% endif %}>{% icon "occupancy" %} Occupancy checks{% if nav_counts.occupancy %}<span class="nav__count" title="Certifications to review">{{ nav_counts.occupancy }}</span>{% endif %}</a>
+      <a href="{% url 'homes:improvements' %}" {% if section == "homes" and "improvement" in url_name %}aria-current="page"{% endif %}>{% icon "improvement" %} Improvements{% if nav_counts.improvements %}<span class="nav__count" title="Requests to review">{{ nav_counts.improvements }}</span>{% endif %}</a>
+      <a href="{% url 'homes:refinances' %}" {% if section == "homes" and "refinance" in url_name %}aria-current="page"{% endif %}>{% icon "refinance" %} Refinances{% if nav_counts.refinances %}<span class="nav__count" title="Requests to review">{{ nav_counts.refinances }}</span>{% endif %}</a>
+      <div class="nav__label">Policy &amp; reporting</div>
+      <a href="{% url 'formulas:list' %}" {% if section == "formulas" %}aria-current="page"{% endif %}>{% icon "formula" %} Resale formulas</a>
+      <a href="{% url 'reports:index' %}" {% if section == "reports" %}aria-current="page"{% endif %}>{% icon "chart" %} Reports</a>
+      {% if user.is_superuser %}<a href="{% url 'admin:index' %}">{% icon "settings" %} Settings</a>{% endif %}
+    </nav>
+    {% endwith %}
+    <div class="sidebar__foot">
+      <div class="sidebar__user">
+        <span>{{ user.get_full_name|default:user.username }}</span>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="linkbutton" type="submit">Sign out</button></form>
+      </div>
+    </div>
+  </aside>
+  <main class="main" id="content">
+    {% include "partials/messages.html" %}
+    {% block content %}{% endblock %}
+    <footer class="footer">
+      <span>Leasekeep {{ build.label }} · <a href="https://www.gnu.org/licenses/agpl-3.0.html">AGPL-3.0</a></span>
+      <span>{{ organization.name }}</span>
+    </footer>
+  </main>
+</div>
+{% endblock %}

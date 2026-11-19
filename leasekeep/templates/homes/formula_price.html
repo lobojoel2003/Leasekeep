@@ -1,0 +1,74 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}Formula price · {{ home.street }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="{% url 'homes:list' %}">Homes</a><span>/</span><a href="{{ home.get_absolute_url }}">{{ home.street }}</a><span>/</span><span>Formula price</span></div>
+    <h1>Formula price{% if not ownership.is_active %} at resale{% endif %}</h1>
+    <p>{{ ownership.household.name }} · {{ ownership.formula.name }} · valued {{ quote.valuation_date|longdate }}</p>
+  </div>
+  <div class="actions no-print">
+    <button class="btn" type="button" onclick="window.print()">{% icon "print" "sm" %} Print worksheet</button>
+    {% if ownership.is_active %}<a class="btn btn--accent" href="{% url 'homes:resale' ownership.pk %}">{% icon "resale" "sm" %} Record resale</a>{% endif %}
+  </div>
+</div>
+
+<div class="split">
+  <div class="stack">
+    <section class="card">
+      <div class="card__head">
+        <div><h2>The math</h2><p>{{ ownership.formula.summary }}</p></div>
+      </div>
+      {% if quote.stale_appraisal %}<div class="callout">The appraisal on file is {{ quote.appraisal_age_years }} years old. <a href="{% url 'homes:appraisal_create' home.pk %}">Record a new appraisal</a> for an accurate price, or try a value under “What if”.</div>{% endif %}
+      {% if quote.overridden %}<div class="callout callout--info">This is a what-if estimate using the values you entered. Nothing was saved.</div>{% endif %}
+      {% if quote.ok %}
+        {% include "partials/worksheet.html" with result=quote.result %}
+      {% else %}
+        <div class="callout callout--bad">{{ quote.error }}</div>
+      {% endif %}
+    </section>
+    {% if quote.sources %}
+    <section class="card">
+      <div class="card__head"><div><h2>Where the numbers come from</h2></div></div>
+      <ul class="sources">
+        {% for s in quote.sources %}<li><span>{{ s.label }}</span><strong class="num">{{ s.value }}</strong>{% if s.detail %}<span class="src-detail">{{ s.detail }}</span>{% endif %}</li>{% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </div>
+
+  <div class="stack">
+    <section class="card card--brand price-card">
+      <div class="card__head" style="margin-bottom:0"><div><h2 style="color:#fff">{% if quote.overridden %}Estimated price{% else %}Formula price{% endif %}</h2><p>{{ quote.valuation_date|longdate }}</p></div></div>
+      {% if quote.ok %}
+        <div class="price">{{ quote.price|money:0 }}</div>
+        <div class="small" style="color:#c4ddcf">{{ quote.result.owner_gain|money:0 }} more than {{ ownership.household.name }} paid, after {{ quote.result.years_held|floatformat:1 }} years</div>
+        {% include "partials/price_ladder.html" %}
+        {% if quote.overridden and on_file.ok %}<p class="small" style="margin:10px 0 0;color:#e2efe7">On file today: {{ on_file.price|money:0 }}</p>{% endif %}
+      {% else %}
+        <div class="price">—</div>
+      {% endif %}
+    </section>
+
+    <section class="card no-print" id="what-if">
+      <div class="card__head"><div><h2>What if…</h2><p>Try another date, appraisal or index value. Nothing is saved.</p></div></div>
+      <form method="get" class="form" novalidate>
+        {% include "partials/form_fields.html" %}
+        <div class="form-actions"><button class="btn btn--primary" type="submit">Recalculate</button>{% if quote.overridden or request.GET.on %}<a class="btn btn--ghost" href="{% url 'homes:formula' ownership.pk %}">Reset</a>{% endif %}</div>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><div><h2>Ownership</h2></div></div>
+      <dl class="kv">
+        <dt>Purchased</dt><dd>{{ ownership.purchase_date|longdate }}</dd>
+        <dt>Price paid</dt><dd>{{ ownership.purchase_price|money }}</dd>
+        {% if ownership.initial_appraised_value %}<dt>Market value then</dt><dd>{{ ownership.initial_appraised_value|money }}</dd>{% endif %}
+        {% if ownership.sale_date %}<dt>Sold</dt><dd>{{ ownership.sale_date|longdate }} for {{ ownership.sale_price|money }}</dd>{% endif %}
+        <dt>Formula</dt><dd><a href="{{ ownership.formula.get_absolute_url }}">{{ ownership.formula.name }}</a></dd>
+      </dl>
+    </section>
+  </div>
+</div>
+{% endblock %}

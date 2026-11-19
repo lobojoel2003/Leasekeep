@@ -1,0 +1,44 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}Refinance review{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="{% url 'homes:refinances' %}">Refinance approvals</a></div>
+    <h1>Refinance with {{ refi.lender }}</h1>
+    <p>{{ refi.ownership.home.street }} · {{ refi.ownership.household.name }} · submitted {{ refi.created_at|date:"M j, Y" }}{% if refi.submitted_by_owner %} by the homeowner{% endif %}</p>
+  </div>
+</div>
+<div class="split">
+  <div class="stack">
+    <section class="card">
+      <div class="card__head"><div><h2>Policy check</h2><p>Largest loan allowed: {{ organization.refinance_max_ltv_percent|floatformat:"-1" }}% of the current formula price.</p></div></div>
+      {% if refi.max_allowed_loan %}
+        <div class="{% if refi.within_policy %}callout callout--good{% else %}callout callout--bad{% endif %}">
+          {% if refi.within_policy %}Within policy.{% else %}Over the policy limit.{% endif %}
+          The {{ refi.loan_amount|money:0 }} loan is {{ refi.ltv_percent }}% of the {{ refi.formula_price_at_review|money:0 }} formula price; the limit is {{ refi.max_allowed_loan|money:0 }}.
+        </div>
+        <dl class="kv">
+          <dt>New loan</dt><dd>{{ refi.loan_amount|money }}</dd>
+          {% if refi.existing_balance is not None %}<dt>Current balance</dt><dd>{{ refi.existing_balance|money }}</dd><dt>Cash out</dt><dd>{{ refi.cash_out|money }}</dd>{% endif %}
+          {% if refi.interest_rate %}<dt>Rate / term</dt><dd>{{ refi.interest_rate|floatformat:"-3" }}%{% if refi.term_years %} · {{ refi.term_years }} years{% endif %}</dd>{% endif %}
+          <dt>Purpose</dt><dd>{{ refi.get_purpose_display }}</dd>
+        </dl>
+      {% else %}<div class="callout">{{ quote.error|default:"The formula price couldn't be calculated, so the policy limit is unknown." }}</div>{% endif %}
+      {% if refi.explanation %}<p style="margin:14px 0 0" class="ink-2">{{ refi.explanation|linebreaksbr }}</p>{% endif %}
+    </section>
+    <section class="card">
+      <div class="card__head"><div><h2>Decision</h2></div></div>
+      <form method="post" class="form form--wide" novalidate>
+        {% csrf_token %}
+        {% include "partials/form_fields.html" %}
+        <div class="form-actions"><button class="btn btn--primary" type="submit">Save decision</button><a class="btn btn--ghost" href="{% url 'homes:refinances' %}">Cancel</a></div>
+      </form>
+    </section>
+  </div>
+  <section class="card">
+    <div class="card__head"><div><h2>Formula price</h2><p>{{ refi.ownership.formula.name }}</p></div></div>
+    {% if quote.ok %}{% include "partials/worksheet.html" with result=quote.result %}{% else %}<p class="muted">{{ quote.error }}</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

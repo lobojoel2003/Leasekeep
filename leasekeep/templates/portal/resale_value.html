@@ -1,0 +1,35 @@
+{% extends "portal_base.html" %}
+{% load leasekeep %}
+{% block title %}Resale value{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Your home's resale value</h1><p>When you sell, your ground lease sets the price with a resale formula. That keeps the home affordable for the next family while you build equity.</p></div>
+</div>
+<div class="split">
+  <section class="card">
+    <div class="card__head"><div><h2>How it's calculated</h2><p>{{ ownership.formula.summary }}</p></div></div>
+    {% if quote.ok %}{% include "partials/worksheet.html" with result=quote.result %}{% else %}<div class="callout">We need a little more information to calculate your resale value. Please contact the office.</div>{% endif %}
+    {% if quote.sources %}
+      <h3 style="margin:20px 0 10px">Where the numbers come from</h3>
+      <ul class="sources">{% for s in quote.sources %}<li><span>{{ s.label }}</span><strong class="num">{{ s.value }}</strong>{% if s.detail %}<span class="src-detail">{{ s.detail }}</span>{% endif %}</li>{% endfor %}</ul>
+    {% endif %}
+  </section>
+  <div class="stack">
+    <section class="card card--brand price-card">
+      <div class="card__head" style="margin-bottom:0"><div><h2 style="color:#fff">Resale value today</h2><p>{{ quote.valuation_date|longdate }}</p></div></div>
+      {% if quote.ok %}
+        <div class="price">{{ quote.price|money:0 }}</div>
+        {% include "partials/price_ladder.html" %}
+      {% else %}<div class="price">—</div>{% endif %}
+    </section>
+    <section class="card">
+      <h3>Good to know</h3>
+      <ul class="ink-2 small" style="padding-left:18px;margin:10px 0 0">
+        <li>This is an estimate based on records on file today. The final price is set when you give notice that you intend to sell.</li>
+        <li>Approved capital improvements can raise it. <a href="{% url 'portal:improvement_new' %}">Request a credit</a>.</li>
+        <li>Selling costs, any mortgage balance and unpaid lease fees come out of the sale proceeds.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+{% endblock %}

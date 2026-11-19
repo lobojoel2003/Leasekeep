@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+junit.xml
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+leasekeep/build_info.json
+
+# Local configuration
+.env
+.DS_Store

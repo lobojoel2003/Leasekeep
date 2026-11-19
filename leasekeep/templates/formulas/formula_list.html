@@ -1,0 +1,34 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}Resale formulas{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Resale formulas</h1><p>Each ownership keeps the formula written into its ground lease. Change a formula only to fix a setup mistake, not to change policy for existing homeowners.</p></div>
+  <a class="btn btn--primary" href="{% url 'formulas:create' %}">{% icon "plus" %} New formula</a>
+</div>
+<div class="grid grid-3" style="margin-bottom:24px">
+  {% for f in formulas %}
+  <a class="card" href="{{ f.get_absolute_url }}" style="text-decoration:none;color:inherit;display:block">
+    <div class="card__head" style="margin-bottom:6px"><h2>{{ f.name }}</h2>{% if not f.is_active %}{% status_pill "Inactive" "neutral" %}{% endif %}</div>
+    <div class="pill pill--info" style="margin-bottom:10px">{{ f.get_kind_display }}</div>
+    <p class="ink-2 small">{{ f.summary }}</p>
+    <div class="muted small">{{ f.parameter_label }} · {{ f.active_homes }} active home{{ f.active_homes|pluralize }}</div>
+  </a>
+  {% empty %}
+  <div class="card"><div class="empty">{% icon "formula" %}<div>Create your first resale formula.</div></div></div>
+  {% endfor %}
+</div>
+<div class="page-head" style="margin-bottom:12px">
+  <div><h2>Indexes</h2><p>Published values that indexed formulas follow, such as HUD Area Median Income.</p></div>
+  <a class="btn" href="{% url 'formulas:series_create' %}">{% icon "plus" "sm" %} New index</a>
+</div>
+<section class="card card--flush">
+  <table class="table">
+    <thead><tr><th>Index</th><th>Kind</th><th class="r">Values</th></tr></thead>
+    <tbody>
+    {% for s in series %}<tr><td><a class="row-link" href="{% url 'formulas:series' s.pk %}">{{ s.name }}</a><span class="sub">Shown as “{{ s.short_name }}”</span></td><td>{{ s.get_kind_display }}</td><td class="r">{{ s.n }}</td></tr>
+    {% empty %}<tr><td colspan="3"><div class="empty">No indexes yet. Indexed formulas need one.</div></td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

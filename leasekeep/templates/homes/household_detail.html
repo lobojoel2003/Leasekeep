@@ -1,0 +1,59 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}{{ household.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="{% url 'homes:households' %}">Households</a><span>/</span><span>{{ household.name }}</span></div>
+    <h1>{{ household.name }}</h1>
+    <p>{{ household.primary_contact }}{% if household.co_owners %} · {{ household.co_owners }}{% endif %}</p>
+  </div>
+  <a class="btn" href="{% url 'homes:household_edit' household.pk %}">Edit</a>
+</div>
+<div class="split">
+  <section class="card card--flush">
+    <div class="card__head"><div><h2>Homes</h2></div></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Home</th><th>Formula</th><th>Owned</th><th class="r">Bought</th><th class="r">Sold</th></tr></thead>
+      <tbody>
+      {% for o in ownerships %}
+        <tr>
+          <td><a class="row-link" href="{{ o.home.get_absolute_url }}">{{ o.home.street }}</a><span class="sub">{{ o.get_status_display }}</span></td>
+          <td><a href="{% url 'homes:formula' o.pk %}">{{ o.formula.name }}</a></td>
+          <td class="nowrap">{{ o.purchase_date|date:"Y" }}–{% if o.sale_date %}{{ o.sale_date|date:"Y" }}{% else %}now{% endif %}</td>
+          <td class="r">{{ o.purchase_price|money:0 }}</td>
+          <td class="r">{{ o.sale_price|money:0 }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5"><div class="empty">{% icon "home" %}<div>This household hasn't bought a home yet. Use “Record a sale” on a home to assign it.</div></div></td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+  <div class="stack">
+    <section class="card">
+      <div class="card__head"><div><h2>Details</h2></div></div>
+      <dl class="kv">
+        <dt>Email</dt><dd>{{ household.email|default:"—" }}</dd>
+        <dt>Phone</dt><dd>{{ household.phone|default:"—" }}</dd>
+        {% if household.mailing_address %}<dt>Mail to</dt><dd>{{ household.mailing_address }}</dd>{% endif %}
+        <dt>Household size</dt><dd>{{ household.household_size }}</dd>
+        <dt>Income at purchase</dt><dd>{{ household.annual_income_at_purchase|money:0 }}{% if household.ami_percent_at_purchase %} · {{ household.ami_percent_at_purchase|floatformat:"-1" }}% AMI{% endif %}</dd>
+        <dt>Income category</dt><dd>{{ household.income_category }}</dd>
+        <dt>Race</dt><dd>{{ household.get_race_display }}</dd>
+        <dt>Hispanic/Latino</dt><dd>{{ household.hispanic|yesno:"Yes,No,Not reported" }}</dd>
+        <dt>Female head</dt><dd>{{ household.female_head_of_household|yesno:"Yes,No,Not reported" }}</dd>
+      </dl>
+      {% if household.notes %}<p class="ink-2" style="margin:14px 0 0">{{ household.notes|linebreaksbr }}</p>{% endif %}
+    </section>
+    <section class="card">
+      <div class="card__head"><div><h2>Homeowner portal</h2><p>{% if household.portal_user %}Signs in as {{ household.portal_user.email }}{% if household.portal_user.last_login %} · last visit {{ household.portal_user.last_login|date:"M j, Y" }}{% endif %}{% else %}Not invited yet{% endif %}</p></div></div>
+      <form method="post" action="{% url 'homes:household_invite' household.pk %}" class="form">
+        {% csrf_token %}
+        {% include "partials/form_fields.html" with form=invite_form %}
+        <button class="btn btn--primary" type="submit">{% if household.portal_user %}Resend invitation{% else %}Send invitation{% endif %}</button>
+      </form>
+    </section>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}Refinance approvals{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Refinance approvals</h1><p>Homeowners need the trust's approval for any new mortgage, so debt stays within what the formula price can support.</p></div>
+</div>
+<div class="filters"><div class="segmented" role="group"><a href="?show=open" {% if show == "open" %}aria-current="true"{% endif %}>Open</a><a href="?show=all" {% if show == "all" %}aria-current="true"{% endif %}>All</a></div></div>
+<section class="card card--flush">
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Home</th><th>Lender</th><th>Purpose</th><th class="r">Loan</th><th class="r">Policy limit</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for r in items %}
+      <tr>
+        <td><a class="row-link" href="{{ r.get_absolute_url }}">{{ r.ownership.home.street }}</a><span class="sub">{{ r.ownership.household.name }} · {{ r.created_at|date:"M j, Y" }}</span></td>
+        <td>{{ r.lender }}</td>
+        <td>{{ r.get_purpose_display }}</td>
+        <td class="r">{{ r.loan_amount|money:0 }}</td>
+        <td class="r">{% if r.max_allowed_loan %}{{ r.max_allowed_loan|money:0 }}{% if r.within_policy %}<span class="sub" style="color:var(--good-ink)">within policy</span>{% else %}<span class="sub" style="color:var(--bad-ink)">over limit</span>{% endif %}{% else %}—{% endif %}</td>
+        <td>{% if r.is_open %}{% status_pill r.get_status_display "warn" %}{% elif r.status == "denied" %}{% status_pill r.get_status_display "bad" %}{% elif r.status == "withdrawn" %}{% status_pill r.get_status_display "neutral" %}{% else %}{% status_pill r.get_status_display "good" %}{% endif %}</td>
+        <td class="r"><a class="btn btn--sm" href="{{ r.get_absolute_url }}">{% if r.is_open %}Review{% else %}Open{% endif %}</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7"><div class="empty">{% icon "refinance" %}<div>No refinance requests{% if show == "open" %} waiting{% endif %}.</div></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

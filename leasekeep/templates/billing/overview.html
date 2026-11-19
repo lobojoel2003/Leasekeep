@@ -1,0 +1,67 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}Lease fees{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Lease fees</h1><p>{{ lease_count }} active ground lease{{ lease_count|pluralize }}. Payments apply to the oldest charges first.</p></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'reports:aging' %}">{% icon "download" "sm" %} Aging CSV</a>
+    <a class="btn" href="{% url 'reports:payments' %}">{% icon "download" "sm" %} Payments CSV</a>
+  </div>
+</div>
+
+<div class="tiles">
+  <div class="tile"><div class="tile__label">Outstanding</div><div class="tile__value">{{ aging.totals.total|money:0 }}</div><div class="tile__meta">{{ aging.rows|length }} account{{ aging.rows|length|pluralize }} with a balance</div></div>
+  <div class="tile"><div class="tile__label">Over 90 days</div><div class="tile__value">{{ aging.totals.days_90|money:0 }}</div><div class="tile__meta">Consider a payment plan or notice</div></div>
+  <div class="tile"><div class="tile__label">Collected in {{ month|date:"F" }}</div><div class="tile__value">{{ collected_month|money:0 }}</div><div class="tile__meta">{% if online_payments_enabled %}Online payments on{% else %}Online payments off · checks and cash only{% endif %}</div></div>
+</div>
+
+<div class="split">
+  <section class="card card--flush">
+    <div class="card__head"><div><h2>Balances by age</h2><p>As of {{ aging.as_of|longdate }}</p></div></div>
+    <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Lease</th><th class="r">0–30</th><th class="r">31–60</th><th class="r">61–90</th><th class="r">90+</th><th class="r">Total</th></tr></thead>
+      <tbody>
+      {% for row in aging.rows %}
+        <tr>
+          <td><a class="row-link" href="{% url 'billing:ledger' row.lease.pk %}">{{ row.lease.home.street }}</a><span class="sub">{{ row.lease.household.name }} · {{ row.lease.lease_number }}</span></td>
+          <td class="r">{{ row.current|money }}</td>
+          <td class="r">{{ row.days_30|money }}</td>
+          <td class="r">{{ row.days_60|money }}</td>
+          <td class="r">{% if row.days_90 %}<strong style="color:var(--bad-ink)">{{ row.days_90|money }}</strong>{% else %}{{ row.days_90|money }}{% endif %}</td>
+          <td class="r"><strong>{{ row.total|money }}</strong></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6"><div class="empty">{% icon "check" %}<div>Every account is paid up.</div></div></td></tr>
+      {% endfor %}
+      </tbody>
+      {% if aging.rows %}<tfoot><tr><td>Total</td><td class="r">{{ aging.totals.current|money }}</td><td class="r">{{ aging.totals.days_30|money }}</td><td class="r">{{ aging.totals.days_60|money }}</td><td class="r">{{ aging.totals.days_90|money }}</td><td class="r">{{ aging.totals.total|money }}</td></tr></tfoot>{% endif %}
+    </table>
+    </div>
+  </section>
+
+  <div class="stack">
+    <section class="card">
+      <div class="card__head"><div><h2>Bill a month</h2><p>{% if missing %}{{ missing|length }} lease{{ missing|length|pluralize }} {{ missing|length|pluralize:"has,have" }} no {{ month|date:"F" }} charge yet.{% else %}All active leases are billed for {{ month|date:"F" }}.{% endif %}</p></div></div>
+      <form method="post" action="{% url 'billing:generate' %}" class="form">
+        {% csrf_token %}
+        {% include "partials/form_fields.html" with form=generate_form %}
+        <button class="btn btn--primary" type="submit">Create charges</button>
+      </form>
+      <p class="small muted" style="margin:12px 0 0">Tip: schedule <code>python manage.py generate_lease_charges</code> to run on the 1st of each month.</p>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><div><h2>Recent payments</h2></div></div>
+      <table class="table table--compact">
+        <tbody>
+        {% for p in recent %}
+          <tr><td>{{ p.lease.home.street }}<span class="sub">{{ p.received_on|date:"M j" }} · {{ p.get_method_display }}</span></td><td class="r">{{ p.amount|money }}{% if p.status != "succeeded" %}<span class="sub">{{ p.get_status_display }}</span>{% endif %}</td></tr>
+        {% empty %}<tr><td class="muted">No payments yet.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% load leasekeep %}
+{% if form.non_field_errors %}<div class="non-field-errors">{% for e in form.non_field_errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</div>{% endif %}
+{% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+<div class="{% if grid %}form-grid{% endif %}">
+{% for field in form.visible_fields %}
+  {% with wtype=field.widget_type %}
+  <div class="field{% if field.errors %} field--error{% endif %}{% if wtype == 'checkbox' %} field--check{% endif %}{% if wtype == 'textarea' or wtype == 'radioselect' or wtype == 'clearablefile' or wtype == 'file' %} field--full{% endif %}">
+    {% if wtype == "checkbox" %}
+      <label for="{{ field.id_for_label }}">{{ field }} <span>{{ field.label }}</span></label>
+    {% elif wtype == "radioselect" %}
+      <span class="label">{{ field.label }}</span>
+      <div class="radio-row">{% for radio in field %}<label for="{{ radio.id_for_label }}">{{ radio.tag }} {{ radio.choice_label }}</label>{% endfor %}</div>
+    {% else %}
+      <label for="{{ field.id_for_label }}">{{ field.label }}{% if not field.field.required %} <span class="muted" style="font-weight:400">(optional)</span>{% endif %}</label>
+      {{ field }}
+    {% endif %}
+    {% if field.help_text %}<div class="help">{{ field.help_text|safe }}</div>{% endif %}
+    {% if field.errors %}<ul class="errors">{% for e in field.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+  </div>
+  {% endwith %}
+{% endfor %}
+</div>

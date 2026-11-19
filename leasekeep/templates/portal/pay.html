@@ -1,0 +1,25 @@
+{% extends "portal_base.html" %}
+{% load leasekeep %}
+{% block title %}Pay lease fee{% endblock %}
+{% block content %}
+<div class="page-head"><div><div class="crumbs"><a href="{% url 'portal:home' %}">{% icon "back" "sm" %} My home</a></div><h1>Pay your lease fee</h1><p>Your balance is {% if balance > 0 %}<strong>{{ balance|money }}</strong>{% else %}paid up{% endif %}. Your monthly fee is {{ lease.monthly_fee|money }}.</p></div></div>
+<div class="split">
+  <section class="card">
+    {% if enabled %}
+    <form method="post" class="form" novalidate>
+      {% csrf_token %}
+      {% include "partials/form_fields.html" %}
+      <p class="small muted">You'll continue to our payment processor, Stripe, to pay by bank transfer (ACH, no fee to you) or card. Bank transfers take 3–5 business days to clear.</p>
+      <div class="form-actions"><button class="btn btn--primary" type="submit">Continue to payment</button><a class="btn btn--ghost" href="{% url 'portal:home' %}">Cancel</a></div>
+    </form>
+    {% else %}
+    <div class="callout callout--info">Online payments aren't set up yet.</div>
+    <p>You can pay by check or money order payable to <strong>{{ organization.name }}</strong>{% if organization.address %}, mailed to {{ organization.address }}{% endif %}. Please write your lease number, <strong>{{ lease.lease_number }}</strong>, on the memo line.</p>
+    {% endif %}
+  </section>
+  <section class="card">
+    <h3>Other ways to pay</h3>
+    <p class="ink-2 small" style="margin-top:8px">Checks and money orders are always welcome. If you're having trouble paying, please call us. We'd much rather set up a plan than see a balance grow.</p>
+  </section>
+</div>
+{% endblock %}

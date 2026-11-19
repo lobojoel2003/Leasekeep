@@ -1,0 +1,76 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}Board report FY{{ report.fiscal_year }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs no-print"><a href="{% url 'reports:index' %}">Reports</a></div>
+    <h1>{{ organization.name }} · Stewardship report FY{{ report.fiscal_year }}</h1>
+    <p>{{ report.start|longdate }} – {{ report.end|longdate }}{% if report.end > today %} · year to date{% endif %}</p>
+  </div>
+  <div class="actions no-print">
+    <a class="btn" href="?fy={{ report.fiscal_year|add:-1 }}">FY{{ report.fiscal_year|add:-1 }}</a>
+    <a class="btn" href="?fy={{ report.fiscal_year }}&format=csv">{% icon "download" "sm" %} CSV</a>
+    <button class="btn btn--primary" type="button" onclick="window.print()">{% icon "print" "sm" %} Print</button>
+  </div>
+</div>
+
+<div class="tiles">
+  <div class="tile"><div class="tile__label">Homes in trust</div><div class="tile__value">{{ report.homes }}</div><div class="tile__meta">{{ report.active_ownerships }} with a homeowner · {{ report.new_ownerships }} new this year</div></div>
+  <div class="tile"><div class="tile__label">Affordability preserved</div><div class="tile__value">{{ report.valuation.affordability_preserved|money:0 }}</div><div class="tile__meta">Market value above formula prices</div></div>
+  <div class="tile"><div class="tile__label">Lease fee collection</div><div class="tile__value">{% if report.collection_rate is not None %}{{ report.collection_rate }}%{% else %}—{% endif %}</div><div class="tile__meta">{{ report.collected|money:0 }} of {{ report.billed|money:0 }}</div></div>
+  <div class="tile"><div class="tile__label">Owner-occupancy confirmed</div><div class="tile__value">{% if report.occupancy_rate is not None %}{{ report.occupancy_rate }}%{% else %}—{% endif %}</div><div class="tile__meta">{{ report.occupancy.compliant }} of {{ report.occupancy.total }} checks · {{ report.occupancy.open }} open</div></div>
+</div>
+
+<div class="grid grid-2">
+  <section class="card">
+    <div class="card__head"><div><h2>Resales</h2><p>Homes sold to the next income-eligible buyer</p></div></div>
+    {% if report.resales %}
+    <table class="table table--compact">
+      <thead><tr><th>Home</th><th class="r">Bought</th><th class="r">Sold</th><th class="r">Market</th></tr></thead>
+      <tbody>{% for o in report.resales %}<tr><td>{{ o.home.street }}<span class="sub">{{ o.household.name }} · {{ o.sale_date|date:"M Y" }}</span></td><td class="r">{{ o.purchase_price|money:0 }}</td><td class="r">{{ o.sale_price|money:0 }}</td><td class="r">{{ o.appraised_value_at_sale|money:0 }}</td></tr>{% endfor %}</tbody>
+    </table>
+    <dl class="kv" style="margin-top:12px">
+      <dt>Equity gained by sellers</dt><dd>{{ report.resale_seller_gain|money:0 }}</dd>
+      <dt>Affordability kept for buyers</dt><dd>{{ report.resale_affordability_kept|money:0 }}</dd>
+    </dl>
+    {% else %}<p class="muted">No resales this fiscal year.</p>{% endif %}
+  </section>
+  <section class="card">
+    <div class="card__head"><div><h2>Lease fees</h2></div></div>
+    <dl class="kv">
+      <dt>Billed</dt><dd>{{ report.billed|money }}</dd>
+      <dt>Collected</dt><dd>{{ report.collected|money }}</dd>
+      <dt>Outstanding at year end</dt><dd>{{ report.receivable_end|money }}</dd>
+      <dt>Over 90 days today</dt><dd>{{ report.aging.totals.days_90|money }}</dd>
+    </dl>
+  </section>
+  <section class="card">
+    <div class="card__head"><div><h2>Requests and approvals</h2></div></div>
+    <dl class="kv">
+      <dt>Improvement requests</dt><dd>{{ report.improvements_received }} received · {{ report.improvements_approved }} approved</dd>
+      <dt>Improvement credits</dt><dd>{{ report.improvement_credits|money:0 }}</dd>
+      <dt>Refinance requests</dt><dd>{{ report.refinances.received }} received · {{ report.refinances.approved }} approved · {{ report.refinances.denied }} denied</dd>
+      <dt>Occupancy checks ({{ report.occupancy_year }})</dt><dd>{{ report.occupancy.compliant }} compliant · {{ report.occupancy.non_compliant }} not · {{ report.occupancy.waived }} waived</dd>
+    </dl>
+  </section>
+  <section class="card">
+    <div class="card__head"><div><h2>Portfolio</h2></div></div>
+    <dl class="kv">
+      {% for label, n in report.homes_by_type %}<dt>{{ label }}</dt><dd>{{ n }}</dd>{% endfor %}
+      <dt>Formula value</dt><dd>{{ report.valuation.total_formula|money:0 }}</dd>
+      <dt>Market value</dt><dd>{{ report.valuation.total_market|money:0 }}</dd>
+      <dt>Public subsidy retained</dt><dd>{{ report.subsidy_total|money:0 }}</dd>
+    </dl>
+  </section>
+  <section class="card">
+    <div class="card__head"><div><h2>Who the homes serve</h2><p>Active homeowners by income at purchase</p></div></div>
+    <table class="table table--compact"><tbody>{% for band, n in report.income_bands %}<tr><td>{{ band }}</td><td class="r">{{ n }}</td></tr>{% empty %}<tr><td class="muted">No income data recorded.</td></tr>{% endfor %}</tbody></table>
+  </section>
+  <section class="card">
+    <div class="card__head"><div><h2>Subsidy by source</h2></div></div>
+    <table class="table table--compact"><tbody>{% for label, amount in report.subsidy_by_source %}<tr><td>{{ label }}</td><td class="r">{{ amount|money:0 }}</td></tr>{% empty %}<tr><td class="muted">No subsidy recorded.</td></tr>{% endfor %}</tbody></table>
+  </section>
+</div>
+<p class="print-only small muted" style="margin-top:20px">Generated by Leasekeep {{ build.label }} on {{ today|longdate }}.</p>
+{% endblock %}

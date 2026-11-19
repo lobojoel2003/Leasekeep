@@ -1,0 +1,16 @@
+{% extends "portal_base.html" %}
+{% load leasekeep %}
+{% block title %}Thank you{% endblock %}
+{% block content %}
+<section class="card" style="max-width:640px">
+  <h1>Thank you!</h1>
+  {% if payment.status == "succeeded" %}
+    <p class="ink-2" style="margin-top:8px">We received your payment of {{ payment.amount|money }}.</p>
+  {% elif payment %}
+    <p class="ink-2" style="margin-top:8px">Your payment of {{ payment.amount|money }} is processing. Bank transfers usually clear in 3–5 business days, and your balance updates when they do.</p>
+  {% else %}
+    <p class="ink-2" style="margin-top:8px">Your payment is being processed. Your balance will update shortly.</p>
+  {% endif %}
+  <a class="btn btn--primary" href="{% url 'portal:payments' %}">See my lease fees</a>
+</section>
+{% endblock %}

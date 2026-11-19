@@ -1,0 +1,32 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}Households{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Households</h1><p>Homeowners, past homeowners and buyers in the pipeline.</p></div>
+  <a class="btn btn--primary" href="{% url 'homes:household_create' %}">{% icon "plus" %} Add a household</a>
+</div>
+<form class="filters" method="get" role="search"><label class="sr-only" for="q">Search</label><input type="search" id="q" name="q" value="{{ q }}" placeholder="Name, contact or email"><button class="btn" type="submit">Search</button></form>
+<section class="card card--flush">
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Household</th><th>Contact</th><th class="r">Size</th><th>Income at purchase</th><th class="r">Homes</th><th>Portal</th></tr></thead>
+    <tbody>
+    {% for hh in page %}
+      <tr>
+        <td><a class="row-link" href="{{ hh.get_absolute_url }}">{{ hh.name }}</a>{% if hh.co_owners %}<span class="sub">{{ hh.co_owners }}</span>{% endif %}</td>
+        <td>{{ hh.primary_contact }}<span class="sub">{{ hh.email|default:hh.phone }}</span></td>
+        <td class="r">{{ hh.household_size }}</td>
+        <td>{{ hh.income_category }}</td>
+        <td class="r">{{ hh.n_homes }}</td>
+        <td>{% if hh.portal_user %}{% status_pill "Invited" "good" %}{% else %}<span class="muted">—</span>{% endif %}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6"><div class="empty">{% icon "users" %}<div>No households{% if q %} match “{{ q }}”{% endif %}.</div></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% include "partials/pagination.html" %}
+{% endblock %}

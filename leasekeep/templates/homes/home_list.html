@@ -1,0 +1,46 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}Homes{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Homes</h1><p>{{ total }} home{{ total|pluralize }} in the trust{% if q %} matching “{{ q }}”{% endif %}</p></div>
+  <div class="actions">
+    <a class="btn" href="{% url 'reports:valuation' %}">{% icon "download" %} Valuation CSV</a>
+    <a class="btn btn--primary" href="{% url 'homes:create' %}">{% icon "plus" %} Add a home</a>
+  </div>
+</div>
+<form class="filters" method="get" role="search">
+  <label class="sr-only" for="q">Search homes</label>
+  <input type="search" id="q" name="q" value="{{ q }}" placeholder="Address, household, parcel or lease number">
+  <select name="status" aria-label="Status">
+    <option value="">All homes</option>
+    <option value="occupied" {% if status == "occupied" %}selected{% endif %}>Occupied</option>
+    <option value="vacant" {% if status == "vacant" %}selected{% endif %}>Vacant / in resale</option>
+  </select>
+  <button class="btn" type="submit">{% icon "search" "sm" %} Search</button>
+</form>
+<section class="card card--flush">
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Home</th><th>Homeowner</th><th>Formula</th><th class="r">Purchase price</th><th class="r">Formula price today</th><th class="r">Market value</th></tr></thead>
+    <tbody>
+    {% for home, quote in page %}
+      <tr>
+        <td><a class="row-link" href="{{ home.get_absolute_url }}">{{ home.street }}</a><span class="sub">{{ home.city }}, {{ home.state }} · {{ home.get_home_type_display }}</span></td>
+        {% with o=quote.ownership %}
+        <td>{% if o %}{{ o.household.name }}<span class="sub">Since {{ o.purchase_date|date:"Y" }}</span>{% else %}{% status_pill "Vacant / in resale" "warn" %}{% endif %}</td>
+        <td>{% if o %}{{ o.formula.name }}<span class="sub">{{ o.formula.parameter_label }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td class="r">{% if o %}{{ o.purchase_price|money:0 }}{% else %}—{% endif %}</td>
+        <td class="r">{% if quote.ok %}<strong>{{ quote.price|money:0 }}</strong>{% if quote.result.capped %}<span class="sub">capped at appraisal</span>{% endif %}{% elif quote %}<span class="pill pill--warn" title="{{ quote.error }}">Needs data</span>{% else %}—{% endif %}</td>
+        <td class="r">{% if quote.market_value %}{{ quote.market_value|money:0 }}<span class="sub">{{ quote.appraisal.effective_date|date:"M Y" }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        {% endwith %}
+      </tr>
+    {% empty %}
+      <tr><td colspan="6"><div class="empty">{% icon "home" %}<div>No homes yet. <a href="{% url 'homes:create' %}">Add the first one</a>.</div></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% include "partials/pagination.html" %}
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}{{ formula.name }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="{% url 'formulas:list' %}">Resale formulas</a></div>
+    <h1>{{ formula.name }}</h1>
+    <p>{{ formula.summary }}</p>
+  </div>
+  <a class="btn" href="{% url 'formulas:edit' formula.pk %}">Edit</a>
+</div>
+<div class="split">
+  <section class="card">
+    <div class="card__head"><div><h2>Try it</h2><p>Price a hypothetical home with this formula. Nothing is saved.</p></div></div>
+    <form method="get" class="form form--wide" novalidate>
+      {% include "partials/form_fields.html" with grid=True %}
+      <div class="form-actions"><button class="btn btn--primary" type="submit">Calculate</button></div>
+    </form>
+    <div style="margin-top:18px">
+      {% if result %}{% include "partials/worksheet.html" %}{% elif error %}<div class="callout callout--bad">{{ error }}</div>{% endif %}
+    </div>
+  </section>
+  <div class="stack">
+    <section class="card">
+      <div class="card__head"><div><h2>Settings</h2></div>{% status_pill formula.get_kind_display "info" %}</div>
+      <dl class="kv">
+        {% if formula.kind == "appraisal" %}<dt>Owner share</dt><dd>{{ formula.owner_share_percent|floatformat:"-2" }}% of appreciation{% if formula.scale_by_purchase_ratio %}, scaled by price ÷ appraisal{% endif %}</dd>{% endif %}
+        {% if formula.kind == "indexed" %}<dt>Index</dt><dd><a href="{% url 'formulas:series' formula.index_series.pk %}">{{ formula.index_series.name }}</a></dd>{% endif %}
+        {% if formula.kind == "fixed_rate" %}<dt>Rate</dt><dd>{{ formula.annual_rate_percent|floatformat:"-3" }}% a year, {{ formula.get_compounding_display|lower }}</dd><dt>Partial years</dt><dd>{{ formula.prorate_partial_years|yesno:"Counted by month,Whole years only" }}</dd>{% endif %}
+        <dt>Improvements</dt><dd>{% if formula.include_improvements %}{{ formula.get_improvement_depreciation_display }}{% else %}Not credited{% endif %}</dd>
+        <dt>Floor</dt><dd>{{ formula.protect_purchase_price|yesno:"Never below purchase price,None" }}</dd>
+        <dt>Cap</dt><dd>{{ formula.cap_at_appraised_value|yesno:"Never above appraised value,None" }}</dd>
+        <dt>Rounding</dt><dd>{{ formula.get_rounding_display }}</dd>
+      </dl>
+      {% if formula.description %}<p class="ink-2" style="margin:14px 0 0">{{ formula.description|linebreaksbr }}</p>{% endif %}
+    </section>
+    <section class="card">
+      <div class="card__head"><div><h2>Homes using it</h2></div></div>
+      <table class="table table--compact"><tbody>
+      {% for o in ownerships %}<tr><td><a href="{% url 'homes:formula' o.pk %}">{{ o.home.street }}</a><span class="sub">{{ o.household.name }}</span></td><td class="r">since {{ o.purchase_date|date:"Y" }}</td></tr>
+      {% empty %}<tr><td class="muted">No active homes.</td></tr>{% endfor %}
+      </tbody></table>
+    </section>
+  </div>
+</div>
+{% endblock %}

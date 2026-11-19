@@ -1,0 +1,11 @@
+{% load leasekeep %}
+{# Purchase price, formula price and market value on one scale. Expects `quote`. #}
+{% with o=quote.ownership r=quote.result %}
+{% with top=quote.market_value|default:r.price %}
+<div class="ladder" role="img" aria-label="Purchase price {{ o.purchase_price|money:0 }}, formula price {{ r.price|money:0 }}{% if quote.market_value %}, market value {{ quote.market_value|money:0 }}{% endif %}">
+  <div class="ladder__row"><span>Paid</span><span class="ladder__track"><span class="ladder__bar" style="width:{{ o.purchase_price|percent_of:top }}%"></span></span><span class="ladder__value">{{ o.purchase_price|money:0 }}</span></div>
+  <div class="ladder__row"><span>Formula price</span><span class="ladder__track"><span class="ladder__bar ladder__bar--formula" style="width:{{ r.price|percent_of:top }}%"></span></span><span class="ladder__value">{{ r.price|money:0 }}</span></div>
+  {% if quote.market_value %}<div class="ladder__row"><span>Market value</span><span class="ladder__track"><span class="ladder__bar ladder__bar--market" style="width:100%"></span></span><span class="ladder__value">{{ quote.market_value|money:0 }}</span></div>{% endif %}
+</div>
+{% endwith %}
+{% endwith %}

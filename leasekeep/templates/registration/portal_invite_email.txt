@@ -1,0 +1,10 @@
+{% autoescape off %}Hello,
+
+Your land trust has set up a homeowner portal for {{ household.name }}. In the portal you can pay your ground lease fee, see your home's resale value, request improvement credits and submit your yearly occupancy certification.
+
+Choose a password to get started:
+
+{{ protocol }}://{{ domain }}{% url 'password_reset_confirm' uidb64=uid token=token %}
+
+Your sign-in is this email address. The link works for a few days; if it expires, use "Forgot your password?" on the sign-in page.
+{% endautoescape %}

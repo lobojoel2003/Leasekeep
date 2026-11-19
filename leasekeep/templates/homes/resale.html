@@ -1,0 +1,36 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}Record resale · {{ ownership.home.street }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <div class="crumbs"><a href="{{ ownership.home.get_absolute_url }}">{% icon "back" "sm" %} {{ ownership.home.street }}</a></div>
+    <h1>Record a resale</h1>
+    <p>{{ ownership.household.name }} is selling to a new income-eligible household. This closes their ownership and lease and starts the buyer's.</p>
+  </div>
+</div>
+<div class="split">
+  <section class="card">
+    <form method="post" class="form form--wide" novalidate>
+      {% csrf_token %}
+      {% include "partials/form_fields.html" with grid=True %}
+      <div class="form-actions">
+        <button class="btn btn--accent" type="submit" data-confirm="Record this resale? The seller's ownership and lease will be closed.">Record resale</button>
+        <a class="btn btn--ghost" href="{{ ownership.home.get_absolute_url }}">Cancel</a>
+        <a class="btn btn--ghost" href="{% url 'homes:household_create' %}?next={{ request.path|urlencode }}">{% icon "plus" "sm" %} Add buyer household</a>
+      </div>
+    </form>
+  </section>
+  <div class="stack">
+    <section class="card card--brand price-card">
+      <div class="card__head" style="margin-bottom:0"><div><h2 style="color:#fff">Formula price today</h2><p>{{ ownership.formula.name }}</p></div></div>
+      {% if quote.ok %}
+        <div class="price">{{ quote.price|money:0 }}</div>
+        <div class="small" style="color:#c4ddcf">The sale price can't exceed this without a board-approved exception. The formula is recalculated on the sale date using the appraisal you enter.</div>
+        {% include "partials/price_ladder.html" %}
+      {% else %}<div class="callout">{{ quote.error }}</div>{% endif %}
+      <a class="btn btn--light btn--sm" style="margin-top:12px" href="{% url 'homes:formula' ownership.pk %}">Show the math</a>
+    </section>
+  </div>
+</div>
+{% endblock %}

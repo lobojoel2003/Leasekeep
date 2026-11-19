@@ -1,0 +1,80 @@
+{% extends "portal_base.html" %}
+{% load leasekeep %}
+{% block title %}My home{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <p class="muted" style="margin:0">Welcome back,</p>
+    <h1 class="welcome">{{ household.primary_contact }}</h1>
+    {% if home %}<p>{{ home.full_address }}</p>{% endif %}
+  </div>
+</div>
+{% if not ownership %}
+  <section class="card"><div class="empty">{% icon "home" %}<div>There's no active home on your account. Please contact {{ organization.name }}.</div></div></section>
+{% else %}
+  {% for check in checks_due %}
+  <div class="callout" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+    <span>{% icon "occupancy" "sm" %} Your {{ check.year }} owner-occupancy certification is due by {{ check.due_date|longdate }}.</span>
+    <a class="btn btn--sm btn--primary" href="{% url 'portal:certify' check.pk %}">Certify now</a>
+  </div>
+  {% endfor %}
+
+  <div class="grid grid-3" style="margin-bottom:16px">
+    <section class="card">
+      <div class="tile__label">{% icon "fees" "sm" %} Lease fee balance</div>
+      {% if ledger %}
+        <div class="tile__value">{% if ledger.balance > 0 %}{{ ledger.balance|money }}{% else %}$0.00{% endif %}</div>
+        <div class="tile__meta">{% if ledger.covered_by_pending %}Your {{ ledger.pending|money }} payment is processing{% elif ledger.balance > 0 %}{% if ledger.overdue_amount %}<span class="down">{{ ledger.overdue_amount|money }} past due</span>{% else %}Due {{ ledger.oldest_unpaid.charge.due_date|longdate }}{% endif %}{% elif ledger.credit %}{{ ledger.credit|money }} credit on account{% else %}You're all paid up{% endif %}{% if ledger.pending and not ledger.covered_by_pending %} · {{ ledger.pending|money }} processing{% endif %}</div>
+        <div class="actions" style="margin-top:12px"><a class="btn btn--primary btn--sm" href="{% url 'portal:pay' %}">Pay lease fee</a><a class="btn btn--ghost btn--sm" href="{% url 'portal:payments' %}">History</a></div>
+      {% else %}<div class="tile__meta">No ground lease on file.</div>{% endif %}
+    </section>
+    <section class="card card--brand price-card span-2">
+      <div class="card__head" style="margin-bottom:0"><div><h2 style="color:#fff">Your home's resale value today</h2><p>{{ ownership.formula.name }}</p></div><a class="btn btn--light btn--sm" href="{% url 'portal:resale_value' %}">See how it's calculated</a></div>
+      {% if quote.ok %}
+        <div class="price">{{ quote.price|money:0 }}</div>
+        <div class="small" style="color:#c4ddcf">That's {{ quote.result.owner_gain|money:0 }} more than the {{ ownership.purchase_price|money:0 }} you paid in {{ ownership.purchase_date|date:"Y" }}.</div>
+      {% else %}
+        <p style="margin-top:10px;color:#e2efe7">We need a little more information to calculate this. Please contact the office.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <h2 style="margin:24px 0 12px">What would you like to do?</h2>
+  <div class="action-tiles" style="margin-bottom:24px">
+    <a class="action-tile" href="{% url 'portal:pay' %}">{% icon "fees" %}<div><strong>Pay my lease fee</strong><span>Bank transfer or card</span></div></a>
+    <a class="action-tile" href="{% url 'portal:improvement_new' %}">{% icon "improvement" %}<div><strong>Request an improvement credit</strong><span>A new roof, furnace, addition…</span></div></a>
+    <a class="action-tile" href="{% url 'portal:refinance_new' %}">{% icon "refinance" %}<div><strong>Ask to refinance</strong><span>Approval before any new loan</span></div></a>
+    <a class="action-tile" href="{% url 'portal:resale_value' %}">{% icon "formula" %}<div><strong>See my resale value</strong><span>With the math shown</span></div></a>
+  </div>
+
+  <div class="split">
+    <section class="card">
+      <div class="card__head"><div><h2>Your home's story</h2><p>Newest first</p></div></div>
+      {% include "partials/timeline.html" with newest_first=True %}
+    </section>
+    <div class="stack">
+      <section class="card">
+        <div class="card__head"><div><h2>Your requests</h2></div></div>
+        {% if improvements or refinances %}
+        <ul class="queue">
+          {% for item in improvements %}<li><span class="q-icon">{% icon "improvement" %}</span><div><div class="q-title">{{ item.title }}</div><div class="q-sub">{{ item.requested_amount|money:0 }} · {{ item.created_at|date:"M j, Y" }}{% if item.approved_credit and item.status == "approved" %} · {{ item.approved_credit|money:0 }} credit{% endif %}</div></div>{% if item.status == "approved" %}{% status_pill item.get_status_display "good" %}{% elif item.status == "requested" %}{% status_pill "In review" "warn" %}{% else %}{% status_pill item.get_status_display "neutral" %}{% endif %}</li>{% endfor %}
+          {% for r in refinances %}<li><span class="q-icon">{% icon "refinance" %}</span><div><div class="q-title">Refinance with {{ r.lender }}</div><div class="q-sub">{{ r.loan_amount|money:0 }} · {{ r.created_at|date:"M j, Y" }}</div>{% if r.conditions and not r.is_open %}<div class="q-sub">{{ r.conditions }}</div>{% endif %}</div>{% if r.is_open %}{% status_pill "In review" "warn" %}{% elif r.status == "denied" %}{% status_pill r.get_status_display "bad" %}{% else %}{% status_pill r.get_status_display "good" %}{% endif %}</li>{% endfor %}
+        </ul>
+        {% else %}<p class="muted" style="margin:0">No requests yet.</p>{% endif %}
+      </section>
+      <section class="card">
+        <div class="card__head"><div><h2>Your ground lease</h2></div></div>
+        {% if lease %}
+        <dl class="kv">
+          <dt>Lease</dt><dd>{{ lease.lease_number }}</dd>
+          <dt>Monthly fee</dt><dd>{{ lease.monthly_fee|money }}</dd>
+          <dt>Began</dt><dd>{{ lease.start_date|longdate }}</dd>
+          <dt>Term</dt><dd>{{ lease.term_years }} years, to {{ lease.expires_on|date:"Y" }}</dd>
+        </dl>
+        {% endif %}
+        <p class="small muted" style="margin:12px 0 0">Questions? Contact {{ organization.name }}{% if organization.phone %} at {{ organization.phone }}{% endif %}.</p>
+      </section>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

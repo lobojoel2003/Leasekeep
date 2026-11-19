@@ -1,0 +1,16 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}HUD HOME compliance{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><div class="crumbs"><a href="{% url 'reports:index' %}">Reports</a></div><h1>HUD HOME compliance</h1><p>As of {{ on|longdate }} · {{ rows|length }} HOME-assisted home{{ rows|length|pluralize }}</p></div>
+  <a class="btn btn--primary" href="{% url 'reports:home_compliance' %}?on={{ on|date:'Y-m-d' }}">{% icon "download" "sm" %} Download CSV</a>
+</div>
+<div class="callout callout--info">Affordability periods follow 24 CFR 92.254(a)(4): the 2025 HOME rule thresholds ($25,000 / $50,000) for funds committed on or after April 20, 2025, and the prior thresholds ($15,000 / $40,000) before that. Use a subsidy's override when your written agreement requires a longer period.</div>
+<section class="card card--flush">
+  <div class="table-wrap"><table class="table table--compact">
+    <thead><tr>{% for h in header %}<th>{{ h }}</th>{% endfor %}</tr></thead>
+    <tbody>{% for row in rows %}<tr>{% for cell in row %}<td class="nowrap">{% if cell is None %}—{% else %}{{ cell }}{% endif %}</td>{% endfor %}</tr>{% empty %}<tr><td colspan="{{ header|length }}"><div class="empty">No HOME-assisted homes. Record HOME funds under a home's subsidies.</div></td></tr>{% endfor %}</tbody>
+  </table></div>
+</section>
+{% endblock %}

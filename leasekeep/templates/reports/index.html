@@ -1,0 +1,37 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Reports &amp; exports</h1><p>Board reports, funder compliance and spreadsheets for your auditor.</p></div></div>
+<div class="grid grid-2">
+  <section class="card">
+    <div class="card__head"><div><h2>{% icon "chart" %} Annual board report</h2><p>Portfolio, resales, lease fees, occupancy, improvements, refinances and affordability preserved, for a fiscal year.</p></div></div>
+    <form method="get" action="{% url 'reports:board' %}" class="actions">
+      <label class="sr-only" for="fy">Fiscal year</label>
+      <select id="fy" name="fy" style="width:auto">{% for y in years %}<option value="{{ y }}" {% if y == fiscal_year %}selected{% endif %}>FY{{ y }}</option>{% endfor %}</select>
+      <button class="btn btn--primary" type="submit">Open report</button>
+      <button class="btn" type="submit" name="format" value="csv">{% icon "download" "sm" %} CSV</button>
+    </form>
+  </section>
+  <section class="card">
+    <div class="card__head"><div><h2>{% icon "subsidy" %} HUD HOME compliance</h2><p>{{ home_assisted }} HOME-assisted home{{ home_assisted|pluralize }}: affordability periods (24 CFR 92.254), beneficiary data in IDIS categories and principal-residence verification.</p></div></div>
+    <div class="actions">
+      <a class="btn btn--primary" href="{% url 'reports:home_compliance' %}?format=html">Preview</a>
+      <a class="btn" href="{% url 'reports:home_compliance' %}">{% icon "download" "sm" %} CSV</a>
+    </div>
+  </section>
+  <section class="card">
+    <div class="card__head"><div><h2>{% icon "formula" %} Portfolio valuation</h2><p>Every active home's formula price, latest appraisal and the affordability gap preserved.</p></div></div>
+    <a class="btn" href="{% url 'reports:valuation' %}">{% icon "download" "sm" %} CSV</a>
+  </section>
+  <section class="card">
+    <div class="card__head"><div><h2>{% icon "fees" %} Lease fees</h2><p>Aging of balances today, and payments received in a date range.</p></div></div>
+    <form method="get" action="{% url 'reports:payments' %}" class="actions">
+      <a class="btn" href="{% url 'reports:aging' %}">{% icon "download" "sm" %} Aging CSV</a>
+      <input type="date" name="start" value="{{ year_start|date:'Y-m-d' }}" aria-label="From" style="width:auto">
+      <input type="date" name="end" value="{{ today|date:'Y-m-d' }}" aria-label="To" style="width:auto">
+      <button class="btn" type="submit">{% icon "download" "sm" %} Payments CSV</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

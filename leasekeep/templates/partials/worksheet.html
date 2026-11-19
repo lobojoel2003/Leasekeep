@@ -1,0 +1,19 @@
+{# Visible math for a formula result. Expects `result` (engine.FormulaResult). #}
+<table class="worksheet">
+  <tbody>
+  {% for step in result.steps %}
+    <tr class="{% if step.total %}is-total{% endif %}{% if forloop.last %} is-final{% endif %}">
+      <td class="step-n">{{ forloop.counter }}</td>
+      <td>
+        <div class="step-label">{{ step.label }}</div>
+        <div class="step-expr">{{ step.expression }}</div>
+        {% if step.note %}<div class="step-note">{{ step.note }}</div>{% endif %}
+      </td>
+      <td class="step-value">{{ step.display_value }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if result.warnings %}
+  <div class="callout" style="margin-top:12px">{% for w in result.warnings %}{{ w }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</div>
+{% endif %}

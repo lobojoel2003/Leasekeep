@@ -1,0 +1,36 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}Capital improvements{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Capital improvements</h1><p>Approved credits are added to the homeowner's formula price, depreciated by the formula's rules.</p></div>
+</div>
+<div class="filters">
+  <div class="segmented" role="group" aria-label="Status">
+    {% for value, label in statuses %}<a href="?status={{ value }}" {% if status == value %}aria-current="true"{% endif %}>{{ label }}<span class="count">{{ counts|get_item:value|default:0 }}</span></a>{% endfor %}
+    <a href="?status=all" {% if status == "all" %}aria-current="true"{% endif %}>All</a>
+  </div>
+</div>
+<section class="card card--flush">
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Improvement</th><th>Home</th><th>Submitted</th><th class="r">Cost</th><th class="r">Credit</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for item in items %}
+      <tr>
+        <td><a class="row-link" href="{{ item.get_absolute_url }}">{{ item.title }}</a><span class="sub">{{ item.get_category_display }}{% if item.completed_on %} · completed {{ item.completed_on|date:"M Y" }}{% endif %}</span></td>
+        <td>{{ item.ownership.home.street }}<span class="sub">{{ item.ownership.household.name }}</span></td>
+        <td>{{ item.created_at|date:"M j, Y" }}<span class="sub">{% if item.submitted_by_owner %}By homeowner{% else %}By staff{% endif %}</span></td>
+        <td class="r">{{ item.requested_amount|money:0 }}</td>
+        <td class="r">{% if item.approved_credit is not None %}{{ item.approved_credit|money:0 }}{% if item.useful_life_years %}<span class="sub">over {{ item.useful_life_years }} yrs</span>{% endif %}{% else %}—{% endif %}</td>
+        <td>{% if item.status == "approved" %}{% status_pill item.get_status_display "good" %}{% elif item.status == "requested" %}{% status_pill item.get_status_display "warn" %}{% elif item.status == "denied" %}{% status_pill item.get_status_display "bad" %}{% else %}{% status_pill item.get_status_display "neutral" %}{% endif %}</td>
+        <td class="r"><a class="btn btn--sm" href="{{ item.get_absolute_url }}">{% if item.status == "requested" %}Review{% else %}Open{% endif %}</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7"><div class="empty">{% icon "improvement" %}<div>No improvements here.</div></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

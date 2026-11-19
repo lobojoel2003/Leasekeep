@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static leasekeep %}
+{% block body %}
+<header class="portal-top">
+  <div class="portal-top__inner">
+    <a class="brand" href="{% url 'portal:home' %}" style="padding:0">
+      <img src="{% static 'leasekeep/img/logo.svg' %}" alt="">
+      <span><span class="brand__name">{{ organization.display_name }}</span><span class="brand__org">Homeowner portal</span></span>
+    </a>
+    {% with url_name=request.resolver_match.url_name %}
+    <nav aria-label="Portal">
+      <a href="{% url 'portal:home' %}" {% if url_name == "home" %}aria-current="page"{% endif %}>My home</a>
+      <a href="{% url 'portal:payments' %}" {% if url_name == "payments" or url_name == "pay" %}aria-current="page"{% endif %}>Lease fees</a>
+      <a href="{% url 'portal:resale_value' %}" {% if url_name == "resale_value" %}aria-current="page"{% endif %}>Resale value</a>
+    </nav>
+    {% endwith %}
+    <div class="who">
+      <span>{{ portal_household.primary_contact }}</span>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="linkbutton" type="submit">Sign out</button></form>
+    </div>
+  </div>
+</header>
+<main class="portal-main" id="content">
+  {% include "partials/messages.html" %}
+  {% if organization.portal_welcome %}<div class="callout callout--info">{{ organization.portal_welcome|linebreaksbr }}</div>{% endif %}
+  {% block content %}{% endblock %}
+  <footer class="footer">
+    <span>{{ organization.name }}{% if organization.phone %} · {{ organization.phone }}{% endif %}{% if organization.email %} · <a href="mailto:{{ organization.email }}">{{ organization.email }}</a>{% endif %}</span>
+    <span>Powered by Leasekeep</span>
+  </footer>
+</main>
+{% endblock %}

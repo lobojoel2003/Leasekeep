@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Leasekeep">
+  <rect width="64" height="64" rx="15" fill="#1f5c45"/>
+  <path d="M10 47c7-5 14-7.5 22-7.5S47 42 54 47" fill="none" stroke="#9fd0b6" stroke-width="3.4" stroke-linecap="round"/>
+  <path d="M19 37.5V27L32 17l13 10v10.5" fill="none" stroke="#ffffff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M28.5 37.5v-6.5h7v6.5" fill="none" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="46.5" cy="15.5" r="3.6" fill="#f1c27d"/>
+</svg>

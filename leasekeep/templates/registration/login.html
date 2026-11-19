@@ -1,0 +1,15 @@
+{% extends "registration/auth_base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block auth %}
+<h2>Sign in</h2>
+<p class="muted">Staff and homeowners use the same sign-in.</p>
+<form method="post" class="form" novalidate>
+  {% csrf_token %}
+  {% if form.errors %}<div class="non-field-errors">That email or username and password didn't match. Please try again.</div>{% endif %}
+  <div class="field"><label for="id_username">Email or username</label><input type="text" name="username" id="id_username" autocomplete="username" autofocus required value="{{ form.username.value|default:'' }}"></div>
+  <div class="field"><label for="id_password">Password</label><input type="password" name="password" id="id_password" autocomplete="current-password" required></div>
+  <input type="hidden" name="next" value="{{ next }}">
+  <button class="btn btn--primary btn--block" type="submit">Sign in</button>
+</form>
+<p style="margin-top:16px"><a href="{% url 'password_reset' %}">Forgot your password?</a></p>
+{% endblock %}

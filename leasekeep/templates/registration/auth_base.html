@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load static leasekeep %}
+{% block body %}
+<div class="auth">
+  <section class="auth__panel">
+    <a class="brand" href="{% url 'home' %}" style="padding:0">
+      <img src="{% static 'leasekeep/img/logo.svg' %}" alt="">
+      <span><span class="brand__name">Leasekeep</span><span class="brand__org">{{ organization.name }}</span></span>
+    </a>
+    <div>
+      <h1>Homes that stay affordable, records that last.</h1>
+      <p>Ground leases, lease fees, occupancy checks, improvement credits, refinance approvals and resale prices, all in one place for every home in the trust.</p>
+      <ul class="auth__points">
+        <li>{% icon "formula" %} Resale formula prices with the math shown</li>
+        <li>{% icon "calendar" %} A timeline for every home, from purchase to resale</li>
+        <li>{% icon "fees" %} Lease fees by bank transfer or card</li>
+      </ul>
+    </div>
+    <small style="color:#9fc1ae">Leasekeep {{ build.label }}</small>
+  </section>
+  <section class="auth__form">
+    <div class="auth__box">
+      {% include "partials/messages.html" %}
+      {% block auth %}{% endblock %}
+    </div>
+  </section>
+</div>
+{% endblock %}

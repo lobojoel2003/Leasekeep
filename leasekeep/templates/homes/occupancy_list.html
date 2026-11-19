@@ -1,0 +1,41 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}Occupancy checks {{ year }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Owner-occupancy checks</h1><p>Each year, confirm every home is its owner's primary residence. Homeowners can certify in the portal.</p></div>
+  <form method="post" action="{% url 'homes:occupancy_schedule' %}" class="actions">
+    {% csrf_token %}<input type="hidden" name="year" value="{{ year }}">
+    <button class="btn btn--primary" type="submit">{% icon "calendar" "sm" %} Schedule {{ year }} checks</button>
+  </form>
+</div>
+<div class="filters">
+  <div class="segmented" role="group" aria-label="Year">{% for y in years %}<a href="?year={{ y }}" {% if y == year %}aria-current="true"{% endif %}>{{ y }}</a>{% endfor %}</div>
+  <div class="segmented" role="group" aria-label="Result">
+    <a href="?year={{ year }}" {% if not result %}aria-current="true"{% endif %}>All<span class="count">{{ total }}</span></a>
+    {% for value, label in results %}{% with n=summary|get_item:value %}{% if n %}<a href="?year={{ year }}&result={{ value }}" {% if result == value %}aria-current="true"{% endif %}>{{ label }}<span class="count">{{ n }}</span></a>{% endif %}{% endwith %}{% endfor %}
+  </div>
+</div>
+{% if total < eligible %}<div class="callout callout--info">{{ eligible }} home{{ eligible|pluralize }} {{ eligible|pluralize:"is,are" }} due a {{ year }} check and {{ total }} {{ total|pluralize:"is,are" }} scheduled. Use “Schedule {{ year }} checks” to add the rest.</div>{% endif %}
+<section class="card card--flush">
+  <div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Home</th><th>Household</th><th>Due</th><th>Method</th><th>Result</th><th></th></tr></thead>
+    <tbody>
+    {% for c in checks %}
+      <tr>
+        <td><a class="row-link" href="{{ c.ownership.home.get_absolute_url }}">{{ c.ownership.home.street }}</a></td>
+        <td>{{ c.ownership.household.name }}</td>
+        <td class="nowrap">{{ c.due_date|longdate }}</td>
+        <td>{{ c.get_method_display|default:"—" }}{% if c.owner_submitted_at %}<span class="sub">Signed {{ c.owner_submitted_at|date:"M j" }} by {{ c.owner_signed_name }}</span>{% endif %}</td>
+        <td>{% if c.result == "compliant" %}{% status_pill c.get_result_display "good" %}{% elif c.result == "non_compliant" %}{% status_pill c.get_result_display "bad" %}{% elif c.result == "submitted" %}{% status_pill c.get_result_display "info" %}{% elif c.is_overdue %}{% status_pill "Overdue" "bad" %}{% elif c.result == "pending" %}{% status_pill c.get_result_display "warn" %}{% else %}{% status_pill c.get_result_display "neutral" %}{% endif %}</td>
+        <td class="r"><a class="btn btn--sm" href="{% url 'homes:occupancy_record' c.pk %}">{% if c.is_open %}Record{% else %}Edit{% endif %}</a></td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6"><div class="empty">{% icon "occupancy" %}<div>No checks scheduled for {{ year }}.</div></div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
+{% endblock %}

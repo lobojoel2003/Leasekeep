@@ -1,0 +1,17 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Leasekeep{% endblock %} · {{ organization.display_name }}</title>
+  <meta name="description" content="Leasekeep — stewardship software for community land trusts.">
+  <link rel="icon" href="{% static 'leasekeep/img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'leasekeep/css/app.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+{% include "partials/icons.html" %}
+{% block body %}{% endblock %}
+<script src="{% static 'leasekeep/js/app.js' %}" defer></script>
+</body>
+</html>

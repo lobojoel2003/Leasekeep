@@ -1,0 +1,121 @@
+{% extends "staff_base.html" %}
+{% load leasekeep %}
+{% block title %}{{ home.street }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div style="min-width:0">
+    <div class="crumbs"><a href="{% url 'homes:list' %}">Homes</a><span>/</span><span>{{ home.street }}</span></div>
+    <h1>{{ home.street }}</h1>
+    <div class="facts">
+      <span>{% icon "pin" "sm" %} {{ home.city }}, {{ home.state }} {{ home.postal_code }}</span>
+      <span>{% icon "home" "sm" %} {{ home.get_home_type_display }}</span>
+      <span>{% icon "bed" "sm" %} {{ home.bedrooms }} bd · {{ home.bathrooms|floatformat:"-1" }} ba</span>
+      {% if home.square_feet %}<span>{% icon "ruler" "sm" %} {{ home.square_feet }} sq ft</span>{% endif %}
+      <span>{% icon "land" "sm" %} {{ home.get_tenure_display }}</span>
+      {% if home.parcel_id %}<span class="muted">Parcel {{ home.parcel_id }}</span>{% endif %}
+    </div>
+  </div>
+  <div class="actions">
+    <a class="btn" href="{% url 'homes:edit' home.pk %}">Edit</a>
+    <a class="btn" href="{% url 'homes:appraisal_create' home.pk %}">{% icon "appraisal" "sm" %} Appraisal</a>
+    {% if ownership %}
+      <a class="btn btn--accent" href="{% url 'homes:resale' ownership.pk %}">{% icon "resale" "sm" %} Record resale</a>
+    {% else %}
+      <a class="btn btn--primary" href="{% url 'homes:ownership_create' home.pk %}">{% icon "purchase" "sm" %} Record a sale</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="split">
+  <section class="card">
+    <div class="card__head">
+      <div><h2>Timeline</h2><p>Every stewardship event for this home, from purchase to resale</p></div>
+      <div class="segmented" role="group" aria-label="Order">
+        <a href="?order=oldest" {% if not newest_first %}aria-current="true"{% endif %}>Oldest first</a>
+        <a href="?order=newest" {% if newest_first %}aria-current="true"{% endif %}>Newest first</a>
+      </div>
+    </div>
+    {% include "partials/timeline.html" %}
+  </section>
+
+  <div class="stack">
+    {% if ownership %}
+    <section class="card card--brand price-card">
+      <div class="card__head" style="margin-bottom:0"><div><h2 style="color:#fff">Formula price today</h2><p>{{ ownership.formula.name }}</p></div></div>
+      {% if quote.ok %}
+        <div class="price">{{ quote.price|money:0 }}{% if quote.result.capped %} <small>capped at appraisal</small>{% endif %}</div>
+        <div class="small" style="color:#c4ddcf">The most {{ ownership.household.name }} could sell for on {{ quote.valuation_date|longdate }}.</div>
+        {% include "partials/price_ladder.html" %}
+        {% if quote.affordability_gap %}<p class="small" style="margin:10px 0 0;color:#e2efe7">{{ quote.affordability_gap|money:0 }} below market stays with the home for the next buyer.</p>{% endif %}
+      {% else %}
+        <div class="callout" style="margin-top:12px">{{ quote.error }}</div>
+      {% endif %}
+      <div class="actions" style="margin-top:14px">
+        <a class="btn btn--light btn--sm" href="{% url 'homes:formula' ownership.pk %}">{% icon "formula" "sm" %} Show the math</a>
+        <a class="btn btn--light btn--sm" href="{% url 'homes:formula' ownership.pk %}#what-if">What if…</a>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card__head"><div><h2>Homeowner</h2></div><a class="btn btn--ghost btn--sm" href="{{ ownership.household.get_absolute_url }}">Household {% icon "arrow" "sm" %}</a></div>
+      <dl class="kv">
+        <dt>Household</dt><dd>{{ ownership.household.name }}</dd>
+        <dt>Contact</dt><dd>{{ ownership.household.primary_contact }}{% if ownership.household.phone %}<br><span class="muted">{{ ownership.household.phone }}</span>{% endif %}</dd>
+        <dt>Purchased</dt><dd>{{ ownership.purchase_date|longdate }} for {{ ownership.purchase_price|money:0 }}</dd>
+        {% if ownership.initial_appraised_value %}<dt>Market value then</dt><dd>{{ ownership.initial_appraised_value|money:0 }}</dd>{% endif %}
+        <dt>Income at purchase</dt><dd>{{ ownership.household.income_category }}</dd>
+      </dl>
+    </section>
+
+    {% if lease %}
+    <section class="card">
+      <div class="card__head"><div><h2>Ground lease</h2><p>{{ lease.lease_number }} · {{ lease.term_years }} years from {{ lease.start_date|date:"Y" }}</p></div><a class="btn btn--ghost btn--sm" href="{% url 'billing:ledger' lease.pk %}">Ledger {% icon "arrow" "sm" %}</a></div>
+      <dl class="kv">
+        <dt>Monthly fee</dt><dd>{{ lease.monthly_fee|money }}</dd>
+        <dt>Balance</dt><dd>{% if ledger.balance > 0 %}<span class="pill pill--{% if ledger.overdue_amount %}bad{% else %}warn{% endif %}">{{ ledger.balance|money }} due</span>{% elif ledger.credit %}{{ ledger.credit|money }} credit{% else %}<span class="pill pill--good">Paid up</span>{% endif %}</dd>
+        <dt>Expires</dt><dd>{{ lease.expires_on|longdate }}</dd>
+        {% if lease.recording_reference %}<dt>Recorded</dt><dd>{{ lease.recording_reference }}</dd>{% endif %}
+        {% if lease.document %}<dt>Document</dt><dd><a href="{{ lease.document.url }}">Signed lease</a></dd>{% endif %}
+      </dl>
+      <div class="actions" style="margin-top:14px"><a class="btn btn--sm" href="{% url 'billing:payment_create' lease.pk %}">{% icon "plus" "sm" %} Record payment</a></div>
+    </section>
+    {% endif %}
+
+    <section class="card">
+      <div class="card__head"><div><h2>Stewardship actions</h2></div></div>
+      <div class="actions">
+        <a class="btn btn--sm" href="{% url 'homes:improvement_create' ownership.pk %}">{% icon "improvement" "sm" %} Improvement</a>
+        <a class="btn btn--sm" href="{% url 'homes:refinance_create' ownership.pk %}">{% icon "refinance" "sm" %} Refinance request</a>
+        <a class="btn btn--sm" href="{% url 'homes:subsidy_create' home.pk %}">{% icon "subsidy" "sm" %} Subsidy</a>
+      </div>
+      {% for check in open_checks %}
+        <p class="small" style="margin:12px 0 0">{% status_pill check.get_result_display check.is_overdue|yesno:"bad,warn" %} {{ check.year }} occupancy check · <a href="{% url 'homes:occupancy_record' check.pk %}">Record result</a></p>
+      {% endfor %}
+    </section>
+    {% else %}
+    <section class="card">
+      <div class="empty">{% icon "purchase" %}<div>No active homeowner. When a household buys this home, record the sale to start its lease and formula.</div></div>
+      <a class="btn btn--primary btn--block" href="{% url 'homes:ownership_create' home.pk %}">Record a sale</a>
+    </section>
+    {% endif %}
+
+    {% if subsidies %}
+    <section class="card">
+      <div class="card__head"><div><h2>Subsidy in this home</h2></div></div>
+      <table class="table table--compact">
+        <tbody>{% for s in subsidies %}<tr><td>{{ s.get_source_display }}<span class="sub">{{ s.program_name|default:s.get_kind_display }}{% if s.affordability_ends_on %} · affordable to {{ s.affordability_ends_on|date:"M Y" }}{% endif %}</span></td><td class="r">{{ s.amount|money:0 }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </section>
+    {% endif %}
+
+    {% if past_ownerships %}
+    <section class="card">
+      <div class="card__head"><div><h2>Past homeowners</h2></div></div>
+      <table class="table table--compact">
+        <tbody>{% for o in past_ownerships %}<tr><td><a href="{% url 'homes:formula' o.pk %}">{{ o.household.name }}</a><span class="sub">{{ o.purchase_date|date:"Y" }}–{{ o.sale_date|date:"Y" }}</span></td><td class="r">{{ o.purchase_price|money:0 }} → {{ o.sale_price|money:0 }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
