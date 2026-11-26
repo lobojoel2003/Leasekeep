@@ -1,7 +1,7 @@
 # Pinned runtime dependencies for reproducible builds (Docker image, CI).
 # Ranges live in pyproject.toml; Dependabot keeps these pins current.
 asgiref==3.13.0
-certifi==2026.10.23
+certifi==2026.11.20
 charset-normalizer==3.5.2
 dj-database-url==3.1.2
 Django==5.2.19
